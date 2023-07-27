@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="manualTag" language="groovy" pageWidth="192" pageHeight="56" orientation="Landscape" columnWidth="192" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="92ba5040-f96b-4a41-886b-cb1a9b3dd3e0">
+	<property name="ireport.zoom" value="7.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="websky1"/>
+	<parameter name="customer_cd" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="total_items" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="customer_name_L2" class="java.lang.String"/>
+	<parameter name="customer_partno" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="customer_partname" class="java.lang.String"/>
+	<parameter name="packing_date" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="right_arrow" class="java.lang.String"/>
+	<parameter name="snp" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT TO_CHAR(TO_DATE($P{packing_date},'YYYY-MM-DD'),'DD-MON-YYYY') PACKING_DATE_TO_DISPLAY
+,TO_CHAR(CURRENT_DATE,'DD-MON-YYYY HH24.MI') PRINT_DATETIME_TO_DISPLAY
+,(CASE WHEN INFO_DATA.AMOUNT <> SNP THEN '**เศษ**' ELSE '' END) CRUMB
+,RPAD($P{customer_cd},5,'0')||
+RPAD($P{customer_partno},16,' ')||
+LPAD(AMOUNT,6,0)||
+LPAD(SEQ,4,0)||
+LPAD(TOTAL_SEQ,4,0)||
+TO_CHAR(TO_DATE($P{packing_date},'YYYY-MM-DD'),'YYYYMMDD')||--PACKING_DATE_TO_QR 20220518
+TO_CHAR(CURRENT_DATE,'YYYYMMDDHH24MI') -- PRINT_DATETIME_TO_QR
+AS QR_STRING
+,INFO_DATA.*
+FROM
+(   WITH RAW_DATA AS (SELECT $P{snp} SNP, $P{total_items} AMOUNT FROM DUAL)
+
+    SELECT LEVEL SEQ, CEIL(AMOUNT/SNP) TOTAL_SEQ, CASE WHEN (LEVEL*SNP)<= AMOUNT THEN SNP+'0' ELSE AMOUNT -((LEVEL-1)*SNP) END AMOUNT ,SNP FROM RAW_DATA
+    CONNECT BY LEVEL <= CEIL(AMOUNT/SNP)
+    AND PRIOR SYS_GUID() IS NOT NULL
+) INFO_DATA]]>
+	</queryString>
+	<field name="PACKING_DATE_TO_DISPLAY" class="java.lang.String"/>
+	<field name="PRINT_DATETIME_TO_DISPLAY" class="java.lang.String"/>
+	<field name="CRUMB" class="java.lang.String"/>
+	<field name="QR_STRING" class="java.lang.String"/>
+	<field name="SEQ" class="java.math.BigDecimal"/>
+	<field name="TOTAL_SEQ" class="java.math.BigDecimal"/>
+	<field name="AMOUNT" class="java.math.BigDecimal"/>
+	<field name="SNP" class="java.lang.String"/>
+	<variable name="BarCodeImage" class="java.awt.image.BufferedImage" calculation="System"/>
+	<detail>
+		<band height="56" splitType="Stretch">
+			<image>
+				<reportElement uuid="e0bf4564-c102-476f-895d-8f5b51942a8c" x="156" y="10" width="69" height="30"/>
+				<imageExpression><![CDATA[com.google.zxing.client.j2se.MatrixToImageWriter.toBufferedImage(
+     new com.google.zxing.qrcode.QRCodeWriter().encode(
+        $F{QR_STRING},
+         com.google.zxing.BarcodeFormat.QR_CODE, 600, 600))]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement uuid="6a123e6e-1618-445c-8041-3f8c852781b1" x="0" y="12" width="35" height="20"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="SansSerif" size="10" isBold="true" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+				</textElement>
+				<text><![CDATA[DNTH]]></text>
+			</staticText>
+			<textField>
+				<reportElement uuid="35632548-ed93-4fa5-9b30-2bc2077bff3b" x="36" y="12" width="36" height="20"/>
+				<textElement>
+					<font size="10" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{customer_name_L2}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="05dd1b13-373c-4eb2-9fa3-9a537711bff4" x="100" y="14" width="56" height="12"/>
+				<textElement textAlignment="Right">
+					<font size="6" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Seq : "+$V{PAGE_NUMBER}+"/"+$F{TOTAL_SEQ}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="f8adec62-be1b-4982-bec2-db072ea2ed02" x="0" y="39" width="100" height="12"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{customer_partname}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="2b4abafa-4648-4cde-86bf-f7913d9863cf" x="100" y="37" width="83" height="11"/>
+				<textElement textAlignment="Right">
+					<font size="6" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["P : "+$F{PACKING_DATE_TO_DISPLAY}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="8162da16-8228-4078-9896-61b36325bc3d" x="100" y="43" width="83" height="13"/>
+				<textElement textAlignment="Right">
+					<font size="6" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["TDT : "+$F{PRINT_DATETIME_TO_DISPLAY}]]></textFieldExpression>
+			</textField>
+			<image>
+				<reportElement uuid="73601290-823b-4a74-8ff1-a251fe610331" x="28" y="15" width="7" height="7"/>
+				<imageExpression><![CDATA[$P{right_arrow}]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement uuid="562f91d9-2b1b-4f3a-b890-91e2b06b3c9b" x="0" y="24" width="119" height="20"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{customer_partno}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="05dd1b13-373c-4eb2-9fa3-9a537711bff4" x="100" y="24" width="56" height="12"/>
+				<textElement textAlignment="Right">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Q'ty : "+$F{AMOUNT}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="05dd1b13-373c-4eb2-9fa3-9a537711bff4" x="80" y="14" width="28" height="12" forecolor="#000000"/>
+				<textElement textAlignment="Right">
+					<font fontName="SansSerif" size="6" isBold="true" isItalic="false" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{CRUMB}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>
